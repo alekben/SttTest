@@ -194,6 +194,7 @@ $("#leave").click(async function() {
     // Clear all video UI elements
     $("#local-player").empty();
     $("#remote-playerlist").empty();
+    clearRttLogs();
     
     // Reset to initial state
     updateButtonStates('initial');

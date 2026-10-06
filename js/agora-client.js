@@ -76,6 +76,77 @@ function sendSttLanguagesToChannel() {
   }
 }
 
+var rttLogLines = {
+  "rtt-log-transcribe": [],
+  "rtt-log-translate": [],
+  "rtt-log-final": []
+};
+
+function visibleRttLines(elementId) {
+  var lines = rttLogLines[elementId] || [];
+  var transcribeOnly = document.getElementById(elementId + "-transcribe");
+  var translateOnly = document.getElementById(elementId + "-translate");
+  if (transcribeOnly && transcribeOnly.checked) {
+    return lines.filter(function (entry) { return entry.kind === "transcribe"; });
+  }
+  if (translateOnly && translateOnly.checked) {
+    return lines.filter(function (entry) { return entry.kind === "translate"; });
+  }
+  return lines;
+}
+
+function setRttTypeFilter(elementId, which) {
+  var transcribe = document.getElementById(elementId + "-transcribe");
+  var translate = document.getElementById(elementId + "-translate");
+  if (!transcribe || !translate) return;
+  if (which === "transcribe" && transcribe.checked) {
+    translate.checked = false;
+    translate.disabled = true;
+    transcribe.disabled = false;
+  } else if (which === "translate" && translate.checked) {
+    transcribe.checked = false;
+    transcribe.disabled = true;
+    translate.disabled = false;
+  } else {
+    transcribe.disabled = false;
+    translate.disabled = false;
+  }
+  renderRttLog(elementId);
+}
+
+function renderRttLog(elementId) {
+  var el = document.getElementById(elementId);
+  if (!el) return;
+  var lines = visibleRttLines(elementId);
+  var lastOnly = document.getElementById(elementId + "-last");
+  var showLast = lastOnly && lastOnly.checked;
+  var pinTop = elementId !== "rtt-log-final" && el.scrollTop < 8;
+  var texts = lines.map(function (entry) { return entry.text; });
+  el.value = showLast ? (texts.length ? texts[texts.length - 1] : "") : texts.join("\n");
+  if (showLast) return;
+  if (elementId !== "rtt-log-final") {
+    if (pinTop) el.scrollTop = 0;
+  } else {
+    el.scrollTop = el.scrollHeight;
+  }
+}
+
+function appendRttLog(elementId, line, kind) {
+  if (!line) return;
+  if (!rttLogLines[elementId]) rttLogLines[elementId] = [];
+  rttLogLines[elementId].push({ text: line, kind: kind || "other" });
+  renderRttLog(elementId);
+}
+
+function clearRttLogs() {
+  rttLogLines["rtt-log-transcribe"] = [];
+  rttLogLines["rtt-log-translate"] = [];
+  rttLogLines["rtt-log-final"] = [];
+  renderRttLog("rtt-log-transcribe");
+  renderRttLog("rtt-log-translate");
+  renderRttLog("rtt-log-final");
+}
+
 // Update stream message handler
 client.on("stream-message", function(uid, data) {
   try {
@@ -112,8 +183,12 @@ client.on("stream-message", function(uid, data) {
       
       // Optional: Add to history log
       addTranscribeItem(msg.uid, text);
+      if (text.trim()) {
+        appendRttLog("rtt-log-transcribe", `[${timestamp}] uid ${msg.uid} transcribe: ${text}`, "transcribe");
+      }
       const hasFinal = msg.words.some(w => w.isFinal === true);
       if (hasFinal && text.trim()) {
+        appendRttLog("rtt-log-final", `[${timestamp}] uid ${msg.uid} transcribe: ${text}`, "transcribe");
         var speakingLangs = getSpeakingLanguagesConfig();
         var idx = typeof msg.lang === 'number' ? msg.lang : (msg.lang != null ? parseInt(msg.lang, 10) : NaN);
         var sourceLang = (!isNaN(idx) && speakingLangs[idx] != null) ? speakingLangs[idx] : undefined;
@@ -145,6 +220,18 @@ client.on("stream-message", function(uid, data) {
         
         // Optional: Add to history log
         addTranslateItem(msg.uid, text);
+      }
+      msg.trans.forEach(t => {
+        const allText = (t.texts || []).join("");
+        if (allText.trim()) {
+          appendRttLog("rtt-log-translate", `[${timestamp}] uid ${msg.uid} translate ${t.lang}: ${allText}`, "translate");
+        }
+      });
+      if (translation && translation.isFinal === true) {
+        const finalText = (translation.texts || []).join("");
+        if (finalText.trim()) {
+          appendRttLog("rtt-log-final", `[${timestamp}] uid ${msg.uid} translate ${selectedLang}: ${finalText}`, "translate");
+        }
       }
       // Add final translations to the last transcript segment for this uid
       let segmentToUpdate = transcriptHistory.filter(s => s.uid === msg.uid).pop();
@@ -185,6 +272,16 @@ client.on("stream-message", function(uid, data) {
  * Note: This can fire multiple times if a user unpublishes and republishes.
  * We check for existing containers to prevent duplicates.
  */
+client.on("user-joined", function(user) {
+  if (rttPubBotUid === '' || rttPubBotUid == null) return;
+  if (String(user.uid) !== String(rttPubBotUid)) return;
+  const timestamp = new Date().toLocaleTimeString();
+  const line = `[${timestamp}] uid ${user.uid} user-joined: RTT pubBot`;
+  appendRttLog("rtt-log-transcribe", line, "join");
+  appendRttLog("rtt-log-translate", line, "join");
+  appendRttLog("rtt-log-final", line, "join");
+});
+
 client.on("user-published", async function(user, mediaType) {
   // Subscribe to receive the media stream
   await client.subscribe(user, mediaType);

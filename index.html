@@ -158,6 +158,47 @@
       </button>
     </div>
 
+    <div class="rtt-logs">
+      <div class="rtt-log-panel">
+        <div class="rtt-log-heading">
+          <label class="rtt-log-label" for="rtt-log-transcribe">All Transcribe messages</label>
+          <label class="rtt-log-last-only" for="rtt-log-transcribe-last">
+            <input id="rtt-log-transcribe-last" type="checkbox" onchange="renderRttLog('rtt-log-transcribe')">
+            Last only
+          </label>
+        </div>
+        <textarea id="rtt-log-transcribe" class="rtt-log" readonly placeholder="Every transcription caption appears here"></textarea>
+      </div>
+      <div class="rtt-log-panel">
+        <div class="rtt-log-heading">
+          <label class="rtt-log-label" for="rtt-log-translate">All Translate messages</label>
+          <label class="rtt-log-last-only" for="rtt-log-translate-last">
+            <input id="rtt-log-translate-last" type="checkbox" onchange="renderRttLog('rtt-log-translate')">
+            Last only
+          </label>
+        </div>
+        <textarea id="rtt-log-translate" class="rtt-log" readonly placeholder="Every translation caption appears here"></textarea>
+      </div>
+      <div class="rtt-log-panel">
+        <div class="rtt-log-heading">
+          <label class="rtt-log-label" for="rtt-log-final">isFinal captions</label>
+          <label class="rtt-log-last-only" for="rtt-log-final-last">
+            <input id="rtt-log-final-last" type="checkbox" onchange="renderRttLog('rtt-log-final')">
+            Last only
+          </label>
+          <label class="rtt-log-last-only" for="rtt-log-final-transcribe">
+            <input id="rtt-log-final-transcribe" type="checkbox" onchange="setRttTypeFilter('rtt-log-final', 'transcribe')">
+            Transcribe Only
+          </label>
+          <label class="rtt-log-last-only" for="rtt-log-final-translate">
+            <input id="rtt-log-final-translate" type="checkbox" onchange="setRttTypeFilter('rtt-log-final', 'translate')">
+            Translate Only
+          </label>
+        </div>
+        <textarea id="rtt-log-final" class="rtt-log" readonly placeholder="Final captions shown on video appear here"></textarea>
+      </div>
+    </div>
+
     <!-- Connection Settings Modal -->
     <dialog id="connectionModal">
       <div class="flex items-center gap-3 mb-6 pb-4 border-b border-slate-700/50">

@@ -33,6 +33,8 @@ async function startTranscription() {
   // Build the complete configuration for the STT agent
   const body = buildStartRequestBody();
   currentSpeakingLanguages = body.languages || [];
+  // Remember the publisher UID before the request returns so user-joined can match it
+  rttPubBotUid = (body.rtcConfig && body.rtcConfig.pubBotUid) || '';
 
   console.log("Starting transcription with body:", body);
 
@@ -74,6 +76,7 @@ async function startTranscription() {
       updateButtonStates('transcribing');
       return { taskId };
     }
+    rttPubBotUid = '';
     throw new Error(responseData.message || `HTTP error ${res.status}`);
   }
 
@@ -134,6 +137,7 @@ async function stopTranscription() {
   });
   
   taskId = null;
+  rttPubBotUid = '';
   translationEnabled = false;
   $("#enable-translation").prop('disabled', false).removeClass('opacity-50 cursor-not-allowed');
   $("#disable-translation").prop('disabled', true).addClass('opacity-50 cursor-not-allowed');

@@ -26,6 +26,7 @@ var localAudioTrack = null;   // Audio track
 
 // STT (Speech-to-Text) task management
 let taskId = '';              // Current transcription task/agent ID from Agora
+var rttPubBotUid = '';        // pubBotUid sent in the start/join request body
 let tokenName = '';           // Builder token (only used in API version 6.x)
 const gatewayAddress = "https://api.agora.io";  // Agora API endpoint
 let sttVersion = "7.x";       // API version: "6.x" or "7.x" (7.x is newer and recommended)
